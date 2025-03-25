@@ -1,0 +1,56 @@
+// sonar.gradle - SonarQube configuration that leverages existing JaCoCo setup
+
+// Apply the SonarQube plugin
+apply plugin: 'org.sonarqube'
+
+// Make sure the SonarQube plugin is applied after the Android plugin
+project.afterEvaluate {
+    // SonarQube configuration
+    sonarqube {
+        properties {
+            // Project identification
+            property "sonar.projectKey", "${project.group ?: 'com.example'}.${project.name}"
+            property "sonar.projectName", project.name
+            property "sonar.projectVersion", project.android.defaultConfig.versionName
+            
+            // Source directories
+            property "sonar.sources", "src/main"
+            property "sonar.java.sources", "src/main/java,src/main/kotlin"
+            
+            // Test directories
+            property "sonar.tests", "src/test,src/androidTest"
+            
+            // Use the JaCoCo report from your existing configuration
+            property "sonar.coverage.jacoco.xmlReportPaths", "${project.buildDir}/reports/jacoco/jacocoTestReport/jacocoTestReport.xml"
+            
+            // Exclude generated files, tests, etc.
+            property "sonar.exclusions", """
+                **/R.class,
+                **/R\$*.class,
+                **/BuildConfig.*,
+                **/Manifest*.*,
+                **/*Test*.*,
+                **/androidTest/**,
+                **/test/**,
+                android/**/*.*
+            """.stripIndent().trim().replaceAll('\n', ',')
+            
+            // Define the Java bytecode files for analysis
+            property "sonar.java.binaries", [
+                "${project.buildDir}/intermediates/javac/debug",
+                "${project.buildDir}/tmp/kotlin-classes/debug"
+            ].join(",")
+            
+            // Location to store local analysis
+            property "sonar.working.directory", "${project.buildDir}/sonar"
+            
+            // Empty host URL for local analysis (can be overridden via command line)
+            property "sonar.host.url", ""
+        }
+    }
+}
+
+// Create task dependencies to ensure JaCoCo runs before SonarQube
+tasks.matching { it.name == 'sonarqube' }.all { sonarTask ->
+    sonarTask.dependsOn 'jacocoTestReport'
+}

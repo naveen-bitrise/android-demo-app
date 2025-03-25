@@ -1,0 +1,93 @@
+apply plugin: 'jacoco'
+
+jacoco {
+    toolVersion = "0.8.7"
+}
+
+// Ensure all test tasks generate jacoco reports
+tasks.withType(Test) {
+    jacoco {
+        includeNoLocationClasses = true
+    }
+    finalizedBy jacocoTestReport
+}
+
+// Configure the JaCoCo reporting task
+tasks.register('jacocoTestReport', JacocoReport) {
+    group = 'Reporting'
+    description = 'Generate Jacoco coverage reports'
+    
+    // Keep the dependency
+    dependsOn 'testDebugUnitTest'
+    
+    reports {
+        xml.required = true
+        html.required = true
+    }
+    
+    // Use getter methods for path configuration
+    sourceDirectories.setFrom(getSourceDirectories())
+    classDirectories.setFrom(getClassDirectories())
+    
+    // Don't filter execution data during configuration phase
+    executionData.setFrom(getExecutionDataFileTree())
+    
+    doFirst {
+        // This runs during execution phase and will help with debugging
+        executionData.forEach { file ->
+            println "JaCoCo exec file check: ${file.absolutePath}, exists: ${file.exists()}, size: ${file.exists() ? file.length() : 0} bytes"
+        }
+    }
+}
+
+// Define helper methods to collect paths
+FileCollection getSourceDirectories() {
+    return files([
+        "${project.projectDir}/src/main/java",
+        "${project.projectDir}/src/main/kotlin"
+    ])
+}
+
+FileCollection getClassDirectories() {
+    return files([
+        fileTree(dir: "${buildDir}/intermediates/javac/debug", excludes: getExcludes()),
+        fileTree(dir: "${buildDir}/tmp/kotlin-classes/debug", excludes: getExcludes())
+    ])
+}
+
+// Changed to return FileTree to catch all possible .exec files
+FileTree getExecutionDataFileTree() {
+    return fileTree(dir: buildDir, includes: [
+        'jacoco/testDebugUnitTest.exec',
+        'outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec',
+        'outputs/code_coverage/debugUnitTest/testDebugUnitTest.exec',
+        '**/*.exec' // Include all .exec files as fallback
+    ])
+}
+
+List<String> getExcludes() {
+    return [
+        '**/R.class',
+        '**/R$*.class',
+        '**/BuildConfig.*',
+        '**/Manifest*.*',
+        '**/*Test*.*',
+        'android/**/*.*'
+    ]
+}
+
+// Create a task to find all exec files
+tasks.register('findExecFiles') {
+    doLast {
+        println "Searching for .exec files in ${buildDir.absolutePath}..."
+        def execFiles = fileTree(dir: buildDir.absolutePath).include("**/*.exec")
+        if (execFiles.files.isEmpty()) {
+            println "No .exec files found"
+        } else {
+            execFiles.each { file ->
+                println "Found: ${file.absolutePath}, size: ${file.length()} bytes"
+            }
+            println "Total: ${execFiles.files.size()} .exec files"
+        }
+    }
+}

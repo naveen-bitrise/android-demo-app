@@ -14,4 +14,10 @@ class ExampleUnitTest {
     fun addition_isCorrect() {
         assertEquals(4, 2 + 2)
     }
+
+    @Test
+    fun calculatorAddition_isCorrect() {
+        val calculator = Calculator()
+        assertEquals(4, calculator.add(2, 2))
+    }
 }
