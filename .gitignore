@@ -1,4 +1,6 @@
 app/screenshots/
+.DS_Store
+.gitignore
 
 # Built application files
 *.apk

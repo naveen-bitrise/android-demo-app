@@ -1,2 +1,3 @@
 include ':app'
+include ':feature-login'
 rootProject.name = "Bitrise Sample"
