@@ -1,4 +1,5 @@
 app/screenshots/
+.DS_Store
 
 # Built application files
 *.apk
